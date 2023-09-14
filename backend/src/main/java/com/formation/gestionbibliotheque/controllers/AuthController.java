@@ -35,11 +35,11 @@ import com.formation.gestionbibliotheque.security.services.UserDetailsImpl;
 
 import jakarta.validation.Valid;
 
-@CrossOrigin(origins = "http://localhost:8080", maxAge = 3600, allowCredentials="true")
+@CrossOrigin(origins = "http://localhost:8080", maxAge = 3600, allowCredentials = "true")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-  
+
   private final AuthenticationManager authenticationManager;
 
   @Autowired
@@ -54,11 +54,9 @@ public class AuthController {
   @Autowired
   JwtUtils jwtUtils;
 
-
-    AuthController(AuthenticationManager authenticationManager) {
-        this.authenticationManager = authenticationManager;
-    }
-  
+  AuthController(AuthenticationManager authenticationManager) {
+    this.authenticationManager = authenticationManager;
+  }
 
   @PostMapping("/signin")
   public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -68,52 +66,51 @@ public class AuthController {
 
     SecurityContextHolder.getContext().setAuthentication(authentication);
     String jwt = jwtUtils.generateJwtToken(authentication);
-    
-    UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();    
+
+    UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
     List<String> roles = userDetails.getAuthorities().stream()
         .map(item -> item.getAuthority())
         .collect(Collectors.toList());
 
-    return ResponseEntity.ok(new JwtResponse(jwt, 
-                         userDetails.getId(), 
-                         userDetails.getUsername(), 
-                         userDetails.getFirstname(),
-                         userDetails.getLastname(),
-                         userDetails.getEmail(), 
-                         roles));
+    return ResponseEntity.ok(new JwtResponse(jwt,
+        userDetails.getId(),
+        userDetails.getUsername(),
+        userDetails.getFirstname(),
+        userDetails.getLastname(),
+        userDetails.getEmail(),
+        roles));
   }
 
   @GetMapping("/testing")
   public ResponseEntity<?> getTest() {
-	  return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+    return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
   }
-  
+
   @PostMapping("/signup")
   public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
-	    if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-	      return ResponseEntity
-	          .badRequest()
-	          .body(new MessageResponse("Error: Username is already taken!"));
-	    }
+    if (userRepository.existsByUsername(signUpRequest.getUsername())) {
+      return ResponseEntity
+          .badRequest()
+          .body(new MessageResponse("Error: Username is already taken!"));
+    }
 
-	    if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-	      return ResponseEntity
-	          .badRequest()
-	          .body(new MessageResponse("Error: Email is already in use!"));
-	    }else {
+    if (userRepository.existsByEmail(signUpRequest.getEmail())) {
+      return ResponseEntity
+          .badRequest()
+          .body(new MessageResponse("Error: Email is already in use!"));
+    } else {
 
+      // Create new user's account
+      UserModel userModel = new UserModel(signUpRequest.getUsername(),
+          signUpRequest.getLastname(),
+          signUpRequest.getFirstname(),
+          signUpRequest.getEmail(),
+          encoder.encode(signUpRequest.getPassword()));
 
-    // Create new user's account
-    UserModel userModel = new UserModel(signUpRequest.getUsername(),
-                         signUpRequest.getLastname(),
-                         signUpRequest.getFirstname(),                       
-                         signUpRequest.getEmail(),
-                         encoder.encode(signUpRequest.getPassword()));
+      Set<String> strRoles = signUpRequest.getRoles();
+      Set<RoleModel> roles = new HashSet<>();
 
-    Set<String> strRoles = signUpRequest.getRoles();
-    Set<RoleModel> roles = new HashSet<>();
-
-    if (strRoles == null) {
+      if (strRoles == null) {
         RoleModel userRole = roleRepository.findByName(RoleEnum.ROLE_USER)
             .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
         roles.add(userRole);
@@ -144,8 +141,8 @@ public class AuthController {
       userRepository.save(userModel);
 
       return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
-	    }
     }
+  }
 
   @PostMapping("/signout")
   public ResponseEntity<?> logoutUser() {

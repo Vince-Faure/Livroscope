@@ -12,7 +12,6 @@ public class UserDto {
     private String username;
     private String lastname;
     private String firstname;
-    private String password;
     private String email;
     private boolean emailVerified;
     private boolean canBorrow;
